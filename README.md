@@ -3,9 +3,6 @@ Migrate Spotify playlists to your YT Music library
 
 README
 
-This currently only displays the top 20 playlists for the spcified
-user profile, will work on fixing this in the future.
-
 you will need to pip install ytmusicapi and fuzzywuzzy
 
 For Token variable, go to https://developer.spotify.com/console/get-playlist-tracks/ 
