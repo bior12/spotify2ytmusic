@@ -6,6 +6,7 @@ import datetime
 import time
 from fuzzywuzzy import fuzz
 from ytmusicapi.parsers import THUMBNAIL_RENDERER
+from secrets import token, cookie
 
 '''
 README
@@ -20,11 +21,11 @@ The only thing you will need to change is the "cookie" value
 
 '''
 #---------replace this every hour---------
-token = ""
+s_token = token
 #-----------------------------------------
 
 
-auth = f'Bearer {token}'
+auth = f'Bearer {s_token}'
 
 
 headers_auth_m = json.dumps(
@@ -36,7 +37,7 @@ headers_auth_m = json.dumps(
     "x-goog-authuser": "0",
     "x-origin": "https://music.youtube.com",
     #follow the steps on the webside provided above to find the correct "cookie" value, it should be a very long string
-    "cookie" : ""
+    "cookie" : cookie
 })
 ytmusic = YTMusic(headers_auth_m)
 
@@ -45,11 +46,13 @@ start_time = time.time()
 dateTimeObj = datetime.datetime.now()
 timestampStr = dateTimeObj.strftime("%d %b %Y %H.%M.%S")
 
-logger = open(f'Log file {timestampStr}.txt', 'w')
+log_file_name = f'spotify2ytmusic Log file {timestampStr}.txt'
+
+logger = open(log_file_name, 'w', encoding='utf-8')
 logger.close()
 
 def printer(message):
-    logger = open(f'Log file {timestampStr}.txt', 'a')
+    logger = open(log_file_name, 'a', encoding='utf-8')
     try:
         print(message)
         logger.write(message)

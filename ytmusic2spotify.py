@@ -1,4 +1,5 @@
 # importing the requests library
+from lib2to3.pytree import Base
 import requests
 from ytmusicapi import YTMusic
 import json
@@ -6,6 +7,7 @@ import datetime
 import time
 from fuzzywuzzy import fuzz
 from ytmusicapi.parsers import THUMBNAIL_RENDERER
+from secrets import token, cookie
 
 '''
 README
@@ -19,12 +21,12 @@ for headers_auth_m variable, read this page: https://ytmusicapi.readthedocs.io/e
 The only thing you will need to change is the "cookie" value
 
 '''
-#---------replace spotify token every hour---------
-token = "BQCcJgDBGfY7wpWxQVG7u_pa9whMOIXIAGod2X_8qW1N3TiOdYlw4eV9u05mJlQe5H_NvKa0RSmxe0mphx8Ibf2Cn-32KrSnNCofjWTO3-Yu1uqAhNMtZgdxpWmX5OpyUgOhyze3lVNau5Ea91juTzyaOnf9zlXC4bytdCNUwseAmqvUJXeGJmg67ICYrJqpcOi93MgD07UQiSikkIW2huLalm5Li0uc"
-#--------------------------------------------------
+#---------replace this every hour---------
+s_token = token
+#-----------------------------------------
 
 
-auth = f'Bearer {token}'
+auth = f'Bearer {s_token}'
 
 
 headers_auth_m = json.dumps(
@@ -36,20 +38,24 @@ headers_auth_m = json.dumps(
     "x-goog-authuser": "0",
     "x-origin": "https://music.youtube.com",
     #follow the steps on the webside provided above to find the correct "cookie" value, it should be a very long string
-    "cookie" : ""
+    "cookie" : cookie
 })
+
 ytmusic = YTMusic(headers_auth_m)
 
 start_time = time.time()
 
 dateTimeObj = datetime.datetime.now()
 timestampStr = dateTimeObj.strftime("%d %b %Y %H.%M.%S")
+timestampStr = 'a'
 
-logger = open(f'Log file {timestampStr}.txt', 'w')
+log_file_name = f'ytmusic2spotify Log file {timestampStr}.txt'
+
+logger = open(log_file_name, 'w', encoding='utf-8')
 logger.close()
 
 def printer(message):
-    logger = open(f'Log file {timestampStr}.txt', 'a')
+    logger = open(log_file_name, 'a', encoding='utf-8')
     try:
         print(message)
         logger.write(message)
@@ -57,16 +63,58 @@ def printer(message):
     except Exception as e:
         print("error -> check logs")
         logger.write(f'error in reading log: {e}\n')
-        logger.write('"')
+        # logger.write('"')
         for x in message:
             try:
                 logger.write(x)
             except:
                 logger.write('\n')
                 break
-        logger.write('"')
+        # logger.write('"')
     logger.close()
+playlists = ytmusic.get_library_playlists()
+playlist_dict = {}
+for playlist in playlists:
+    playlist_dict[playlist['title']] = playlist
 
-printer('Reading Youtube Music Playlists for user')
+def json_printer(json_object):
+    printer(json.dumps(json_object, indent=4, sort_keys=True))
+
+try:
+    URL_user_id = f"https://api.spotify.com/v1/me"
+    user_data = requests.get(url = URL_user_id, headers={'Authorization': auth})
+    user_data_json = user_data.json()
+    user_id = user_data_json['id']
+    if 'error' in user_data_json:
+        printer(user_data_json['error']['message'])
+        num_songs=0
+        missing_songs=[]
+except BaseException as e:
+    printer('error fetching spotify profile')
+    printer(f'error: {e}')
+
+for i,x in enumerate(playlist_dict):
+    printer(f'{i}: {x}')
+u_input=-1
+while u_input not in [x for x in range(len(playlist_dict)-1)]:
+    try:
+        u_input = int(input('Choose the number of a playlist to copy to Spotify: '))
+    except:
+        print('please input an integer')
+c_playlist = playlists[u_input]
+printer(f"You chose playlist {c_playlist['title']}")
+# printer(f"You chose playlist {c_playlist}")
+
+playlist_info_track_count = ytmusic.get_playlist(c_playlist['playlistId'])['trackCount']
+playlist_info = ytmusic.get_playlist(c_playlist['playlistId'], playlist_info_track_count)
 
 
+data = {
+  "name": c_playlist['title'],
+  "description": playlist_info['description'],
+  "public": 'false'
+  }
+try:
+    printer(str(requests.post(f'https://api.spotify.com/v1/users/{user_id}/playlists', data)))
+except BaseException as e:
+    printer(f'error: {e}')
